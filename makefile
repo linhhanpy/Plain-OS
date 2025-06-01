@@ -33,6 +33,7 @@ out:
 	nasm -I include/ bootloader/loader.asm -o bin/loader.bin
 	#gcc -c -O0 -fno-builtin -m32 -fno-stack-protector -o main.o main.c
 	nasm -I include/ -o root/a.bin apps/a.asm
+	nasm -I include/ -o root/color.bin apps/color.asm
 	python fs.py
 	nasm -f elf -I include/ -o bin/kernel.o kernel/kernel.asm
 	nasm -f elf -o bin/io.o kernel/io.asm

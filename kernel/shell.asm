@@ -74,7 +74,7 @@ shell:
     
     mov al, ' '
     mov ah, 0xFF
-    ;call put_char
+    call put_char
     
 .input_loop:
     call get_key
@@ -101,7 +101,7 @@ shell:
     
     mov al, ' '
     mov ah, 0xFF
-    ;call put_char
+    call put_char
     jmp .input_loop
 
 .backspace:
@@ -115,7 +115,7 @@ shell:
     dec ecx
     mov al, ' '
     mov ah, 0xFF
-    ;call put_char
+    call put_char
     jmp .input_loop
     
 .scroll:
@@ -127,7 +127,7 @@ shell:
 .execute:
     mov al, ' '
     mov ah, 0x0F
-    ;call put_char
+    call put_char
     ; 添加字符串结束符
     mov byte [edi], 0
     

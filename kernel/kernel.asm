@@ -40,6 +40,14 @@ idt_ptr:
 
 ; 欢迎消息
 hello_msg db "Welcome to Plain - OS !", 0
+msg1 db "Kernel Panic: DMA Buffer Overflow on Controller 0x1F00", 0
+msg2 db "Warning: CPU Core #3 Voltage Out of Spec (1.12V > 1.05V Max)", 0
+msg3 db "Error: GPU VRAM ECC Corruption Detected (Bank 2, Row 0x1FF)", 0
+msg4 db "Fatal: ACPI BIOS Error : Invalid OpRegion Address", 0
+msg5 db "Critical: Thunderbolt Authentication Timeout (Device Rejected)", 0
+msg6 db "Error: LPC Clock Signal Unstable (32.768kHz Deviation)", 0
+msg7 db "Warning: Chassis Intrusion Detected - Hardware Tampering Suspected", 0
+msg8 db "Warning: BMC Firmware Update Required (Security Vulnerability)", 0
 net_init_failed_msg db "Network Error!", 0
 ; 系统调用表
 sys_call_table:
@@ -80,9 +88,54 @@ _start:
     test eax, eax
     jz .init_failed   ; 如果返回0表示初始化失败
     
+    xor ecx, ecx
+    inc ebx
+    xor ecx, ecx
+    inc ebx
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg1
+    mov ah, 0x0C
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg2
+    mov ah, 0x0E
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg3
+    mov ah, 0x0C
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg4
+    mov ah, 0x0C
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg5
+    mov ah, 0x0C
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg6
+    mov ah, 0x0C
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg7
+    mov ah, 0x0E
+    call print_str
+    xor ecx, ecx
+    inc ebx
+    mov esi, msg8
+    mov ah, 0x0E
+    call print_str
     ; 启动shell
     xor ecx, ecx
-    mov ebx, 5
+    inc ebx
+    inc ebx
     call shell
     jmp $
     

@@ -21,11 +21,5 @@ _start:
     inc ecx
     mov dl, '!'
     int 0x80
-    inc ecx
-a:
-    mov dl, '!'
-    int 0x80
-    jmp a
     ret
 
-msg db "Hello, World!", 0
