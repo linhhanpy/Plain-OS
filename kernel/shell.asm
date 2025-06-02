@@ -20,6 +20,7 @@ cmd_sleep db "sleep", 0
 cmd_task  db "task", 0
 cmd_vim  db "vim", 0
 cmd_time db "time", 0
+cmd_blue db "blue", 0
 time_str db "HH:MM:SS", 0
 ; 帮助信息
 help_msg1 db "Available commands:", 0
@@ -50,6 +51,10 @@ idt_ptr:
 
 
 [section .text]
+
+VIDEO_MEMORY         equ 0xB8000
+LINE_WIDTH           equ 80
+SCREEN_HEIGHT        equ 25
 extern print_str, put_char, get_key, clear_screen, fs_list_files, fs_files_count, fs_read_file 
 
 extern mem_alloc, mem_free, fs_get_file_size
@@ -162,6 +167,9 @@ shell:
     call cmd_cmp
     je do_ls
     
+    mov edi, cmd_blue
+    call cmd_cmp
+    je do_blue
     
     mov edi, cmd_time
     call cmd_cmp
@@ -1084,6 +1092,9 @@ parse_and_execute:
     call cmd_cmp
     je do_ls
     
+    mov edi, cmd_blue
+    call cmd_cmp
+    je do_blue
     
     mov edi, cmd_time
     call cmd_cmp
@@ -1118,6 +1129,133 @@ parse_and_execute:
     call print_str
     popad
     ret
+
+
+do_blue:
+    call clear_blue
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code1
+    mov ah, 0x1F
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code2
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code
+    call print_str
+
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code3
+    call print_str
+
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code4
+    call print_str
+
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code5
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code6
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code7
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code8
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code9
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code10
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code11
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code12
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code13
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code14
+    call print_str
+    
+    
+    inc ebx
+    mov ecx, 0
+    mov ah, 0x1F
+    mov esi, computer_error_code
+    call print_str
+
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code15
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov ah, 0x1F
+    mov esi, computer_error_code
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code16
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov ah, 0x1F
+    mov esi, computer_error_code
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, computer_error_code17
+    call print_str
+    
+    inc ebx
+    jmp $
+
 
 ; === 十进制打印函数 ===
 ; 输入：EAX=要打印的数字
@@ -1544,6 +1682,18 @@ init_cursor_task:
     pop esi
     ret
 
+
+clear_blue:
+    pusha
+    mov edi, VIDEO_MEMORY
+    mov ecx, LINE_WIDTH * SCREEN_HEIGHT
+    mov ax, (0x11 << 8) | ' '
+    rep stosw
+    popa
+    mov ebx, 0
+    mov ecx, 0
+    ret
+
 ; 光标任务入口点
 cursor_task_entry:
     ; 获取当前光标位置 (需要根据你的系统实现)
@@ -1622,4 +1772,23 @@ run_error_msg db "Error: Cannot execute file: ", 0
 invalid_elf_msg db "Error: Not a valid ELF file", 0
 run_usage_msg db "Usage: run <filename>", 0
 exec_success_msg db "Program exited with code: ", 0
+
+computer_error_code db "                                                                               ", 0
+computer_error_code1 db "A problem has been detected and windows has been shut down to prevent damage    ", 0
+computer_error_code2 db "to your computer.                                                               ", 0
+computer_error_code3 db "The problem seems to be caused by the following file: kernel.bin                ", 0
+computer_error_code4 db "If this is the first time you've seen this stop error screen,                   ", 0
+computer_error_code5 db "restart your computer. If this screen appears again, follow                     ", 0
+computer_error_code6 db "these steps:                                                                    ", 0
+computer_error_code7 db "check to make sure any new hardware or software is properly installed.          ", 0
+computer_error_code8 db "If this is a new installation, ask your hardware or software manufacturer       ", 0
+computer_error_code9 db "for any plain updates you might need.                                          ", 0
+computer_error_code10 db "If problems continue, disable or remove any newly installed hardware           ", 0
+computer_error_code11 db "or software. Disable BIOS memory options such as caching or shadowing.         ", 0
+computer_error_code12 db "If you need to use safe mode to remove or disable components,restart           ", 0
+computer_error_code13 db "your computer, press F8 to select Advanced Startup options, and then           ", 0
+computer_error_code14 db "select Safe Mode.                                                              ", 0
+computer_error_code15 db "Technical Information:                                                         ", 0
+computer_error_code16 db "***STOP:0xa0000001 (0x00000005,0x0000ooo0,0x00000000.0x00000000)               ", 0
+computer_error_code17 db "*** kernel.bin - Address 0x9683f6f9 base at 0x96823000 DateStamp 0x52a23e98    ", 0
 
