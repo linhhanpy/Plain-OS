@@ -6,7 +6,6 @@ _start:
     mov dh, 0x00
     mov dl, ' '
     int 0x80
-    inc ecx
     add dh, 0x0F
     int 0x80
     inc ecx
@@ -52,7 +51,5 @@ _start:
     add dh, 0x0F
     int 0x80
     inc ecx
-    add dh, 0x0F
-    int 0x80
     ret
 

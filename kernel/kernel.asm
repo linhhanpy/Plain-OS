@@ -55,6 +55,8 @@ sys_call_table:
     dd sys_get_key      ; 1
     dd sys_clear_screen ; 2
     dd sys_run_program  ; 3
+    dd power_off        ; 4
+    dd reboot           ; 5
 SYS_CALL_MAX equ ($ - sys_call_table)/4
 
 [section .text]
@@ -232,8 +234,45 @@ sys_run_program:
     ; EBX=文件名指针
     push esi
     mov esi, ebx
-    ; 这里需要实现文件加载和执行逻辑
-    ; call do_run
+    ;
     pop esi
     xor eax, eax
     ret
+
+power_off:
+    ; 尝试 ACPI 关机（适用于 QEMU 和部分真实硬件）
+    mov dx, 0x604
+    mov ax, 0x2000
+    out dx, ax
+
+    ; 备用 ACPI 关机（Bochs 和旧硬件）
+    mov dx, 0xB004
+    mov ax, 0x2000
+    out dx, ax
+
+    ; 如果 ACPI 不可用，尝试 PS/2 控制器关机（旧机器）
+    mov al, 0xFE
+    out 0x64, al
+
+    ; 如果仍然无法关机，进入死循环
+    cli
+    hlt
+    jmp $
+
+reboot:
+    ; 通过键盘控制器发送 0xFE 重启
+    mov al, 0xFE
+    out 0x64, al
+
+    ; 如果失败，尝试 Triple Fault（强制 CPU 重置）
+    cli
+    mov eax, cr0
+    and eax, 0xFFFFFFFE  ; 关闭保护模式
+    mov cr0, eax
+    jmp 0xFFFF:0x0000     ; 跳转到 BIOS 复位向量
+
+    ; 如果仍然无法重启，死循环
+    cli
+    hlt
+    jmp $
+

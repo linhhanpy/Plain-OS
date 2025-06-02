@@ -207,6 +207,9 @@ get_key:
     in al, KEYBOARD_PORT
     mov ah, al           ; 保存扫描码
 
+    ; ESC键 (扫描码0x01)
+    cmp al, 0x01
+    je .esc_key
     ; 处理特殊键 (Shift/Ctrl/Alt/CapsLock)
     cmp al, 0x2A         ; 左Shift按下
     je .shift_press
@@ -303,6 +306,11 @@ get_key:
 .alt_release:
     and byte [key_flags], ~ALT_DOWN
     xor al, al
+    stc
+    jmp .done
+
+.esc_key:
+    mov al, 0x1B         ; ESC键ASCII码
     stc
     jmp .done
 

@@ -1,7 +1,6 @@
 ;shell.asm
 [bits 32]
 
-extern scroll_screen
 [section .data]
 ; Shell界面
 msg db "[root@Plain]-(/)# ", 0
@@ -12,13 +11,14 @@ cmd_echo db "echo", 0
 cmd_help db "help", 0
 cmd_ls   db "ls", 0
 cmd_cat  db "cat", 0
+cmd_photo  db "photo", 0
 cmd_write db "write", 0
 cmd_clear db "clear", 0
 cmd_run db "run", 0
 cmd_ping db "ping", 0
 cmd_sleep db "sleep", 0
 cmd_task  db "task", 0
-
+cmd_vim  db "vim", 0
 cmd_time db "time", 0
 time_str db "HH:MM:SS", 0
 ; 帮助信息
@@ -58,6 +58,7 @@ extern scroll_screen, do_ping_impl
 
 global shell
 shell:
+    call shell_scroll
     call init_timer
     call init_task_system
     ;cmp ebx, 25
@@ -170,6 +171,10 @@ shell:
     call cmd_cmp
     je do_cat
     
+    mov edi, cmd_photo
+    call cmd_cmp
+    je do_photo
+    
     mov edi, cmd_run
     call cmd_cmp
     je do_run
@@ -179,9 +184,13 @@ shell:
     call cmd_cmp
     je do_sleep
 
-    ;mov edi, cmd_write
-    ;call cmd_cmp
-    ;je do_write
+    mov edi, cmd_write
+    call cmd_cmp
+    je do_write
+
+    mov edi, cmd_vim
+    call cmd_cmp
+    je do_vim
 
     ; 检查clear命令
     mov edi, cmd_clear
@@ -220,6 +229,7 @@ shell:
     
     inc ebx
     mov ecx, 0
+    call shell_scroll
     ; 设置新栈
     ;mov ebp, 0x90000
     ;mov esp, ebp
@@ -227,6 +237,8 @@ shell:
     ; 跳转到二进制文件
     call esi
     inc ebx
+    mov ecx, 0
+    call shell_scroll
     jmp shell
     
 .file_not_found1:
@@ -299,6 +311,21 @@ shell:
     inc ebx
     mov ecx, 0
     mov esi, help_msg7
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, help_msg8
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, help_msg9
+    call print_str
+    
+    inc ebx
+    mov ecx, 0
+    mov esi, help_msg10
     call print_str
     
     inc ebx
@@ -415,6 +442,17 @@ cmd_cmp:
     or eax, 1     ; ZF=0
     ret
 
+
+shell_scroll:
+    cmp ebx, 25
+    ja .scroll
+    ret
+.scroll:
+    call scroll_screen
+    mov ebx, 24
+    mov ecx, 0
+    ret
+
 ; 显示固定数量的字符
 print_nchars:
     pusha
@@ -521,13 +559,197 @@ do_cat:
     
     ; 显示内容 (esi已指向内容字符串)
     inc ebx
+    mov ecx, 0          ; 列清零
+    call shell_scroll
+    mov ah, 0x0F        ; 白色文字
+    
+.cat_print_loop:
+    lodsb               ; 读取字符到 AL
+    test al, al         ; 检查字符串结束
+    jz .cat_done
+    
+    cmp al, 0x0A        ; 检查换行符 (\n)
+    je .cat_newline
+    cmp al, 0x0D        ; 检查换行符 (\n)
+    je .cat_print_loop
+    
+    ; 打印普通字符
+    call put_char
+    inc ecx             ; 列++
+    jmp .cat_print_loop
+
+.cat_newline:
+    ; 换行处理
+    inc ebx             ; 行++
+    mov ecx, 0          ; 列清零
+    call shell_scroll
+    jmp .cat_print_loop
+
+.cat_done:
+    inc ebx             ; 换行
+    jmp shell
+    
+.file_not_found:
+    inc ebx
     mov ecx, 0
+    call shell_scroll
+    mov esi, no_file_msg
+    mov ah, 0x0C
+    call print_str
+    
+    ; 显示尝试的文件名
+    mov ecx, 16
+    mov esi, cmd_buffer+3
     mov ah, 0x0F
-    call print_str  ; 直接打印整个内容
+    call print_str
     
     inc ebx
     jmp shell
     
+.no_filename:
+    inc ebx
+    mov ecx, 0
+    call shell_scroll
+    mov esi, cat_usage_msg
+    mov ah, 0x0C
+    call print_str
+    jmp shell
+
+; === photo命令实现 ===
+do_photo:
+    ; 跳过"cat"和空格
+    add esi, 5
+    call skip_spaces
+    test al, al
+    jz .no_filename
+    
+    ; 直接调用文件系统
+    call fs_read_file
+    jc .file_not_found
+    
+    ; 显示内容 (esi已指向内容字符串)
+    inc ebx
+    mov ecx, 0          ; 列清零
+    call shell_scroll
+    mov ah, 0x0F        ; 白色文字
+    
+.cat_print_loop:
+    lodsb               ; 读取字符到 AL
+    test al, al         ; 检查字符串结束
+    jz .cat_done
+    
+    cmp al, 0x0A        ; 检查换行符 (\n)
+    je .cat_newline
+    cmp al, 0x0D        ; 检查换行符 (\n)
+    je .cat_print_loop
+    cmp al, '9'
+    je .hex9
+    cmp al, 'F'
+    je .hexF
+    ; 打印普通字符
+    sub al, '0'
+    mov ah, al
+    mov al, ' '
+    call put_char
+    inc ecx             ; 列++
+    jmp .cat_print_loop
+
+.hex9:
+    mov ah, 0xCC
+    mov al, ' '
+    call put_char
+    inc ecx             ; 列++
+    jmp .cat_print_loop
+
+.hexF:
+    mov ah, 0xFF
+    mov al, ' '
+    call put_char
+    inc ecx             ; 列++
+    jmp .cat_print_loop
+
+
+.cat_newline:
+    ; 换行处理
+    inc ebx             ; 行++
+    mov ecx, 0          ; 列清零
+    call shell_scroll
+    jmp .cat_print_loop
+
+.cat_done:
+    inc ebx             ; 换行
+    jmp shell
+    
+.file_not_found:
+    inc ebx
+    mov ecx, 0
+    call shell_scroll
+    mov esi, no_file_msg
+    mov ah, 0x0C
+    call print_str
+    
+    ; 显示尝试的文件名
+    mov ecx, 16
+    mov esi, cmd_buffer+3
+    mov ah, 0x0F
+    call print_str
+    
+    inc ebx
+    jmp shell
+    
+.no_filename:
+    inc ebx
+    mov ecx, 0
+    call shell_scroll
+    mov esi, cat_usage_msg
+    mov ah, 0x0C
+    call print_str
+    jmp shell
+
+; === write命令实现 ===
+do_write:
+    ; 跳过"write"和空格
+    add esi, 5
+    call skip_spaces
+    test al, al
+    jz .no_filename
+    
+    ; 直接调用文件系统
+    call fs_read_file
+    jc .file_not_found
+    inc ebx
+    mov ecx, 0
+
+.read_key:
+    call get_key
+    test al, al
+    jz .read_key
+    cmp al, 0x1B
+    je .read_key_end
+    cmp al, 0x0A
+    je .read_new_line
+    mov ah, 0x0F
+    call put_char
+    inc ecx
+    mov [esi], al
+    inc esi
+    jmp .read_key
+
+.read_key_end:
+    mov al, 0
+    mov [esi], al
+    inc ebx
+    mov ecx, 0
+    jmp shell
+
+.read_new_line:
+    inc ebx
+    mov ecx, 0
+    mov [esi], al
+    inc esi
+    call shell_scroll
+    jmp .read_key
+
 .file_not_found:
     inc ebx
     mov ecx, 0
@@ -536,7 +758,6 @@ do_cat:
     call print_str
     
     ; 显示尝试的文件名
-    
     mov ecx, 16
     mov esi, cmd_buffer+3
     mov ah, 0x0F
@@ -553,6 +774,121 @@ do_cat:
     call print_str
     jmp shell
 
+
+
+; === vim命令实现 ===
+do_vim:
+    ; 跳过"vim"和空格
+    add esi, 3
+    call skip_spaces
+    test al, al
+    jz .no_filename
+    
+    ; 直接调用文件系统
+    call fs_read_file
+    jc .file_not_found
+
+    call clear_screen
+    mov ebx, 0
+    mov ecx, 0
+    push esi
+    mov esi, vim_msg
+    mov ah, 0x0A
+    call print_str
+    mov ah, 0x0F
+    pop esi
+
+    inc ebx
+    mov ecx, 0
+
+.read_key:
+    mov al, ' '
+    mov ah, 0xFF
+    call put_char
+    call get_key
+    test al, al
+    jz .read_key
+    cmp al, 0x1B
+    je .read_key_end
+    cmp al, 0x0A
+    je .read_new_line
+    cmp al, 0x0D
+    je .read_new_line
+    cmp al, 0x08
+    je .backspace
+    mov ah, 0x0F
+    call put_char
+    inc ecx
+    mov [esi], al
+    inc esi
+    jmp .read_key
+
+.read_key_end:
+    mov al, 0
+    mov [esi], al
+    inc ebx
+    mov ecx, 0
+    jmp shell
+
+.read_new_line:
+    mov al, ' '
+    mov ah, 0x0F
+    call put_char
+    inc ebx
+    mov ecx, 0
+    mov [esi], al
+    inc esi
+    call shell_scroll
+    jmp .read_key
+
+.file_not_found:
+    inc ebx
+    mov ecx, 0
+    mov esi, no_file_msg
+    mov ah, 0x0C
+    call print_str
+    
+    ; 显示尝试的文件名
+    mov ecx, 16
+    mov esi, cmd_buffer+3
+    mov ah, 0x0F
+    call print_str
+    
+    inc ebx
+    jmp shell
+    
+.no_filename:
+    inc ebx
+    mov ecx, 0
+    mov esi, cat_usage_msg
+    mov ah, 0x0C
+    call print_str
+    jmp shell
+
+
+.backspace:
+    ; 退格处理
+    mov al, ' '
+    mov ah, 0x0F
+    call put_char
+    cmp ecx, 0
+    jz .backspace2
+    dec ecx
+    mov al, ' '
+    mov ah, 0xFF
+    call put_char
+    jmp .read_key
+    
+.backspace2:
+
+    mov ecx, 0
+    dec ebx
+    mov al, ' '
+    mov ah, 0xFF
+    call put_char
+    jmp .read_key
+
+vim_msg db "                              vim  ver0.0.0", 0
 
 ; === run命令实现 ===
 ; 常量定义
@@ -1260,6 +1596,8 @@ put_char_at:
     
     pop edi
     ret
+
+
 
 ; 全局变量
 [section .data]
