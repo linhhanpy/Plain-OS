@@ -20,7 +20,7 @@ cmd_sleep db "sleep", 0
 cmd_task  db "task", 0
 cmd_vim  db "vim", 0
 cmd_time db "time", 0
-cmd_blue db "blue", 0
+cmd_blue db "ui", 0
 time_str db "HH:MM:SS", 0
 ; 帮助信息
 help_msg1 db "Available commands:", 0
