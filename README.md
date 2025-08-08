@@ -75,4 +75,4 @@
 # 加入我们
 开发者： lhhasm,resfz
 
-请在Plant OS社区QQ群添加‘admin’用户
+QQ群：1032897903
